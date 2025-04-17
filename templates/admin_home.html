@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+</head>
+<body>
+    <h1>👑 Welcome, Admin {{ user.username }}!</h1>
+    <p>This is your admin dashboard.</p>
+
+    <ul>
+        <li><a href="/admin/">Go to Django Admin Panel</a></li>
+        <li><a href="{% url 'logout' %}">Logout</a></li>
+    </ul>
+</body>
+</html>

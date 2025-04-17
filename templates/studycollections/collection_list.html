@@ -1,0 +1,15 @@
+<!-- studycollections/templates/studycollections/collection_list.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+  <h2>Your Collections</h2>
+  <ul>
+    {% for collection in collections %}
+      <li>{{ collection.title }} - {{ collection.privacy }}</li>
+      <a href="{% url 'view_collection' collection.id %}" class="btn btn-outline-secondary btn-sm">View</a>
+
+    {% endfor %}
+  </ul>
+
+  <a href="{% url 'create_collection' %}" class="btn btn-primary">Create New Collection</a>
+{% endblock %}
