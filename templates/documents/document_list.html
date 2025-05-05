@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Document Library</h2>
+
+<ul>
+    {% for document in documents %}
+        <li>
+            <h3>{{ document.title }}</h3>
+            <p>Uploaded by: {{ document.uploaded_by.username }} on {{ document.uploaded_at }}</p>
+            <p>Description: {{ document.description }}</p>
+            <p><a href="{{ document.file.url }}" target="_blank">Download</a></p>
+
+            {% if document.status == "approved" %}
+                <!-- Report button with dropdown options -->
+                <div class="dropdown">
+                    <a href="{% url 'report_document' document.id %}"
+                    class="btn btn-outline-danger btn-sm">
+                    🚩 Report
+                    </a>
+                </div>
+            {% endif %}
+        </li>
+    {% empty %}
+        <p>No documents uploaded yet.</p>
+    {% endfor %}
+</ul>
+
+{% endblock %}

@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from .forms import CollectionForm
 from django.http import HttpResponseForbidden
 
+
 @login_required
 def collection_list(request):
     collections = Collection.objects.filter(created_by=request.user)  # Filter collections by logged-in user
@@ -48,3 +49,21 @@ def view_collection(request, collection_id):
         'collection': collection,
         'can_edit': can_edit,
     })
+
+# views.py
+
+# views.py
+
+
+def browse_public_collections(request):
+    public_collections = Collection.objects.filter(privacy='public').order_by('-created_at')
+    return render(request, 'studycollections/public_collections.html', {'collections': public_collections})
+
+def collection_detail(request, collection_id):
+    collection = get_object_or_404(Collection, id=collection_id)
+
+    # Optional: prevent accessing private collections by others
+    if collection.privacy == 'private' and collection.created_by != request.user and request.user not in collection.shared_with.all() and request.user not in collection.collaborators.all():
+        return render(request, '403.html', status=403)
+
+    return render(request, 'studycollections/collection_detail.html', {'collection': collection})

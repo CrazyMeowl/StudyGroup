@@ -5,19 +5,24 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.contrib.admin.views.decorators import staff_member_required
 from django.views.decorators.csrf import csrf_exempt
-import requests
+
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
+import requests
 import json
-from .chat_db import get_user_history, save_user_message, clear_user_history  # Import TinyDB utils
+from documents.models import Document 
+from documents.utils import get_relevant_context
 
+OLLAMA_URL = "http://localhost:11434/api/chat"
+MODEL_NAME = "finetuned"
 
 @csrf_exempt
 @login_required
 def clear_chat(request):
     if request.method == "POST":
-        clear_user_history(request.user.username)
+        if 'chat_history' in request.session:
+            del request.session['chat_history']
         return JsonResponse({"status": "cleared"})
     return JsonResponse({"error": "Invalid request method"}, status=400)
 
@@ -57,32 +62,53 @@ def admin_only_view(request):
     return render(request, "admin_page.html")
 
 
+
 @csrf_exempt
 @login_required
 def chat(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        user = request.user.username
-        message = data.get("message")
+        user_message = data.get("message")
 
-        save_user_message(user, "user", message)
+        if not user_message:
+            return JsonResponse({"reply": "Please enter a message."}, status=400)
 
-        # Send message + history to Ollama
-        history = get_user_history(user)
-        response = requests.post(
-            "http://localhost:11434/api/chat",
-            json={
-                "model": "finetuned",
-                "messages": [
-                    {"role": "user", "content": message}
-                ],
-                "stream": False
-            }
-        )
+       # 1) Load & append to session history
+        history = request.session.get("chat_history", [])
+        history.append({"role": "user", "content": user_message})
 
-        # print(response.json())
-        reply = response.json()["message"]["content"]
-        save_user_message(user, "assistant", reply)
+        # 2) Retrieve RAG context (top 5 chunks)
+        context = get_relevant_context(user_message, top_k=5)
 
-        return JsonResponse({"reply": reply})
-    
+        # 3) Build the messages payload
+        messages_payload = []
+        if context:
+            messages_payload.append({
+                "role": "system",
+                "content": f"Here are some relevant excerpts from our document library:\n\n{context}, answer the user question in old english with shake spear vibe."
+            })
+        # Append previous turns
+        messages_payload.extend(history)
+
+        # 4) Call Ollama
+        try:
+            resp = requests.post(
+                OLLAMA_URL,
+                json={
+                    "model": MODEL_NAME,
+                    "messages": messages_payload,
+                    "stream": False
+                }
+            )
+            resp.raise_for_status()
+            assistant_reply = resp.json()["message"]["content"]
+        except Exception as e:
+            assistant_reply = "Sorry, I couldn't reach the AI assistant."
+            print(f"[chat] Ollama error: {e}")
+
+        # 5) Append AI reply to history & trim to last 20
+        history.append({"role": "assistant", "content": assistant_reply})
+        request.session["chat_history"] = history[-20:]
+        request.session.modified = True
+
+        return JsonResponse({"reply": assistant_reply})

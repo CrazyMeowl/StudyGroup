@@ -193,3 +193,4 @@ media/
 *.pot
 
 chat_history.json
+/chroma_db

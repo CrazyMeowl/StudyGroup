@@ -1,0 +1,32 @@
+<!-- templates/moderate_documents.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Pending Documents</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Uploaded By</th>
+            <th>File</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for doc in documents %}
+        <tr>
+            <td>{{ doc.title }}</td>
+            <td>{{ doc.uploaded_by.username }}</td>
+            <td><a href="{{ doc.file.url }}">Download</a></td>
+            <td>
+                <form method="post" action="{% url 'moderate_document_action' doc.id %}">
+                    {% csrf_token %}
+                    <button name="action" value="approve" class="btn btn-success btn-sm">Approve</button>
+                    <button name="action" value="reject" class="btn btn-danger btn-sm">Reject</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
