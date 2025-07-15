@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h2>Edit Multiple Choice Question in "{{ collection.title }}"</h2>
+  <form id="mcq-form" method="post" novalidate>
+    {% csrf_token %}
+
+    <!-- Question Text -->
+    <div class="mb-3">
+      <label for="id_question_text" class="form-label">Question</label>
+      <textarea id="id_question_text" name="question_text" class="form-control" rows="2" required>{{ mcq.question_text }}</textarea>
+    </div>
+
+    <!-- Dynamic Answers List -->
+    <label class="form-label">Answers</label>
+    <div id="answers-container">
+      <!-- Template row to be cloned -->
+      <div class="input-group mb-2 answer-row d-none" id="answer-template">
+        <span class="input-group-text">
+          <input class="form-check-input mt-0 correct-checkbox" type="checkbox">
+        </span>
+        <input type="text" class="form-control answer-input" placeholder="Answer text">
+        <button type="button" class="btn btn-outline-danger remove-answer-btn">✕</button>
+      </div>
+    </div>
+    <button type="button" id="add-answer-btn" class="btn btn-outline-primary btn-sm mb-3">➕ Add Answer</button>
+
+    <!-- Hidden fields to carry JSON data -->
+    <input type="hidden" name="answers" id="answers-field">
+    <input type="hidden" name="correct_indices" id="correct-indices-field">
+
+    <!-- Submit -->
+    <div>
+      <button type="submit" class="btn btn-success">Save Changes</button>
+      <a href="{% url 'collection_detail' collection.id %}" class="btn btn-secondary ms-2">Cancel</a>
+    </div>
+  </form>
+  {{ mcq.answers|json_script:"answers-data" }}
+  {{ mcq.correct_indices|json_script:"correct-indices-data" }}
+  <form action="{% url 'delete_mcq' collection.id mcq.id %}" method="post" onsubmit="return confirm('Are you sure you want to delete this MCQ?');">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Delete MCQ</button>
+</form>
+
+
+</div>
+
+<script>
+  
+document.addEventListener('DOMContentLoaded', () => {
+  const answers = JSON.parse(document.getElementById('answers-data').textContent);
+  const correctIndices = JSON.parse(document.getElementById('correct-indices-data').textContent);
+
+  const container = document.getElementById('answers-container');
+  const template = document.getElementById('answer-template');
+  const addBtn = document.getElementById('add-answer-btn');
+
+  function addAnswerRow(text = '', correct = false) {
+    const row = template.cloneNode(true);
+    row.classList.remove('d-none');
+    row.id = '';
+
+    row.querySelector('.answer-input').value = text;
+    row.querySelector('.correct-checkbox').checked = correct;
+
+    row.querySelector('.remove-answer-btn').addEventListener('click', () => row.remove());
+
+    container.appendChild(row);
+  }
+
+
+
+  answers.forEach((answer, index) => {
+    const isCorrect = correctIndices.includes(index);
+    addAnswerRow(answer, isCorrect);
+  });
+
+  addBtn.addEventListener('click', () => addAnswerRow());
+
+  // On form submission, gather answers + correct indices
+  document.getElementById('mcq-form').addEventListener('submit', (e) => {
+    const answerInputs = container.querySelectorAll('.answer-input');
+    const checkboxes   = container.querySelectorAll('.correct-checkbox');
+    const answers = [], correctIndices = [];
+    let validIndex = 0;
+
+    answerInputs.forEach((input, idx) => {
+      const val = input.value.trim();
+      if (!val) return;
+      answers.push(val);
+      if (checkboxes[idx].checked) {
+        correctIndices.push(validIndex);
+      }
+      validIndex++;
+    });
+
+    if (answers.length < 2) {
+      e.preventDefault();
+      alert('Please add at least two answers.');
+      return;
+    }
+    if (correctIndices.length === 0) {
+      e.preventDefault();
+      alert('Please mark at least one correct answer.');
+      return;
+    }
+
+    document.getElementById('answers-field').value = JSON.stringify(answers);
+    document.getElementById('correct-indices-field').value = JSON.stringify(correctIndices);
+  });
+});
+</script>
+{% endblock %}

@@ -25,9 +25,7 @@ urlpatterns = [
     path('landing/', account_views.landing, name='landing'),
     path('home/', account_views.home, name='home'),
     path('accounts/', include('accounts.urls')),
-    path('collections/', include('studycollections.urls')),
-    path('documents/', include('documents.urls')),
-
+    path('collections/', include('studycollections.urls'))
 ]
 
 

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="mb-4 text-center">📂 Admin Dashboard</h2>
+
+  <div class="row g-4 justify-content-center">
+    <div class="col-md-4">
+      <div class="card border-warning shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title text-warning">Pending Documents</h5>
+          <p class="card-text">
+            These documents are awaiting review. Admins can view, download, approve, or deny each submission.
+          </p>
+          <p class="card-text"><strong>{{ pending_count }}</strong> documents pending</p>
+          <a href="{% url 'pending_documents' %}" class="btn btn-warning w-100">Review Pending</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-success shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title text-success">Approved Documents</h5>
+          <p class="card-text">
+            These documents are published and available in the public library. Admins can download or remove them.
+          </p>
+          <p class="card-text"><strong>{{ approved_count }}</strong> documents approved</p>
+          <a href="{% url 'approved_documents' %}" class="btn btn-success w-100">View Approved</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-secondary shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title text-secondary">Django Admin Panel</h5>
+          <p class="card-text">
+            Full access to manage all models and site-wide configurations using Django's built-in admin interface.
+          </p>
+          <a href="/admin/" class="btn btn-outline-secondary w-100">Open Django Admin</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

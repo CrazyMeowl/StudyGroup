@@ -10,6 +10,35 @@ document.addEventListener("DOMContentLoaded", function () {
     const hideChatButton = document.getElementById('hide-chat-btn');
     const showChatButton = document.getElementById('show-chat-btn');
     const aiLoading = document.getElementById('ai-loading');  // Spinner element
+    const upperNote = document.getElementById('upper-note');
+    const lowerNote = document.getElementById('lower-note');
+    // Fetch and display previous chat history
+    let chatEndpoint = "/accounts/chat/";
+
+    if (typeof window.collectionId !== 'undefined') {
+        chatEndpoint = `/collections/${window.collectionId}/chat/`;
+    }
+
+    fetch(chatEndpoint, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCSRFToken(),
+        },
+    })
+    .then((response) => response.json())
+    .then((data) => {
+        if (Array.isArray(data.history)) {
+            data.history.forEach((entry) => {
+                const sender = entry.role === "user" ? "user" : "ai";
+                const label = sender === "user" ? "You" : "AI";
+                chatMessages.innerHTML += `<div class="chat-bubble ${sender}"><strong>${label}:</strong><br>${escapeHtml(entry.content).replace(/\n/g, "<br/>")}</div>`;
+
+            });
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    });
+
 
     function escapeHtml(text) {
         if (!text) return '';
@@ -40,15 +69,15 @@ document.addEventListener("DOMContentLoaded", function () {
         chatInput.disabled = true;
         chatSubmit.disabled = true;
 
-        
+        chatMessages.className = "p-2";
         chatMessages.innerHTML += `<div class="chat-bubble user"><strong>You:</strong><br>${escapeHtml(message).replace(/\n/g, "<br/>")}</div>`;
 
     
         chatInput.value = "";
         aiLoading.style.display = 'block';  // Show "AI is thinking..."
-
+        upperNote.style.display = 'none';
         try {
-            const response = await fetch("/accounts/chat/", {
+            const response = await fetch(chatEndpoint, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -86,17 +115,18 @@ document.addEventListener("DOMContentLoaded", function () {
         showChatButton.style.display = 'none';
     });
 
-    function clearChat() {
-        const chatMessages = document.getElementById('chat-messages');
+    clearButton.addEventListener('click', () => {
+        
         chatMessages.innerHTML = '';
-
+        chatMessages.className = "p-0";
+        
         fetch('/accounts/clear_chat/', {
             method: 'POST',
             headers: {
                 'X-CSRFToken': getCSRFToken(),
             },
         });
-    }
+    });
 
     function getCSRFToken() {
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');

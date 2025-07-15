@@ -1,10 +1,96 @@
 {% extends 'base.html' %}
+
 {% block content %}
-<h2>Register</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-sm btn-outline-primary">Register</button>
-</form>
-<!-- <a href="{% url 'login' %}" class="btn btn-sm btn-outline-primary">Login</a> -->
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h3 class="card-title text-center mb-4 text-primary">Create an Account</h3>
+
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        {% for field in form %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.name == 'username' %}
+                                <div id="help-username" class=" alert alert-info small">
+                                    <strong>Username Field:</strong>
+                                    <ul class="mb-0">
+                                        <li>Username is Required</li>
+                                        <li>Username must be Lesser than 150 characters</li>
+                                        <li>Can use Letters, digits and special characters</li>
+                                        <li>Allowed Special Characters: @ | . | + | - | _</li>
+                                    </ul>
+                                </div>
+                                {% endif %}
+                                {% if field.name == 'password1' %}
+                                <div id="help-password1" class="d-none alert alert-info small">
+                                    <strong>Password requirements:</strong>
+                                    <ul class="mb-0">
+                                        <li>At least 8 characters long</li>
+                                        <li>Not too similar to your personal information</li>
+                                        <li>Not a common password</li>
+                                        <li>Not entirely numeric</li>
+                                    </ul>
+                                </div>
+                                {% endif %}
+
+                                {% if field.name == 'password2' %}
+                                <div id="help-password2" class="d-none alert alert-info small">
+                                    
+                                    <ul class="mb-0">
+                                        <li>Enter the same password as before, for verification.</li>
+                                    </ul>
+                                </div>
+                                {% endif %}
+                                <!-- Default Helptext -->
+                                <!-- {% if field.help_text %}
+                                    <small class="form-text text-muted">{{ field.help_text|safe }}</small>
+                                {% endif %} -->
+
+
+                                {% if field.errors %}
+                                    <div class="text-danger small">
+                                        {{ field.errors|striptags }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+
+                        
+                        <button type="submit" class="btn btn-primary w-100">Register</button>
+                    </form>
+
+                    <p class="text-center mt-3 small">
+                        Already have an account? <a href="{% url 'login' %}">Login</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const fields = ['username', 'password1', 'password2'];
+    
+        fields.forEach(function (fieldName) {
+            const input = document.querySelector(`[name="${fieldName}"]`);
+            const help = document.getElementById(`help-${fieldName}`);
+    
+            if (input && help) {
+                input.addEventListener('focus', function () {
+                    help.classList.remove('d-none');
+                });
+    
+                input.addEventListener('blur', function () {
+                    help.classList.add('d-none');
+                });
+            }
+        });
+    });
+    </script>
+    
 {% endblock %}

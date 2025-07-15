@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4 text-center">📖 Public Library</h2>
+
+    <div class="d-flex justify-content-center mb-4">
+        <a href="{% url 'upload_public_document' %}" class="btn btn-outline-success">Upload Document</a>
+    </div>
+
+    <form method="get" class="row mb-4">
+        <div class="col-md-5 mb-2">
+            <input type="text" name="q" class="form-control" placeholder="Search by title" value="{{ query }}">
+        </div>
+        <div class="col-md-4 mb-2">
+            <input type="text" name="creator" class="form-control" placeholder="Filter by uploader" value="{{ creator }}">
+        </div>
+        <div class="col-md-3 mb-2">
+            <button type="submit" class="btn btn-primary w-100">🔍 Search</button>
+        </div>
+    </form>
+
+    {% if documents %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for document in documents %}
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ document.title }}</h5>
+                            <p class="card-text text-muted">Uploaded by: {{ document.uploaded_by.username }}</p>
+                            <p class="card-text"><small class="text-muted">Uploaded on {{ document.uploaded_at|date:"F j, Y" }}</small></p>
+                        </div>
+                        <div class="card-footer text-center">
+                            <a href="{{ document.file.url }}" class="btn btn-sm btn-primary" download>Download</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted text-center">No documents available in the public library.</p>
+    {% endif %}
+</div>
+{% endblock %}

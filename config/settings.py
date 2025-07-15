@@ -39,8 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'accounts',
-    'studycollections',
-    'documents',
+    'studycollections'
 ]
 
 MIDDLEWARE = [
@@ -140,3 +139,11 @@ CSRF_TRUSTED_ORIGINS = [
     'https://early-logical-molly.ngrok-free.app',  # Add your ngrok URL here
     'https://127.0.0.1',
 ]
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.environ.get('SENDER_EMAIL_USERNAME')
+EMAIL_HOST_PASSWORD = os.environ.get('SENDER_EMAIL_PASSWORD')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER

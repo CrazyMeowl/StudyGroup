@@ -1,0 +1,149 @@
+
+{% extends 'base.html' %}
+{% load index_filters %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Study Mode - {{ collection.title }}</h2>
+
+  <!-- Flashcards Section -->
+  <h4>📘 Flashcards</h4>
+  {% for card in flashcards %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <strong>Q:</strong> {{ card.question|linebreaks }}
+        <button class="btn btn-sm btn-primary" onclick="this.nextElementSibling.classList.toggle('d-none')">Show Answer</button>
+        <div class="mt-2 d-none"><strong>A:</strong> {{ card.answer|linebreaks }}</div>
+      </div>
+    </div>
+  {% endfor %}
+
+  <!-- MCQs -->
+  <h3>📝 Multiple Choice Questions</h3>
+  {% for mcq in mcqs %}
+  <div class="card mb-3">
+    <div class="card-body">
+      <p><strong>{{ forloop.counter }}. {{ mcq.question_text }}</strong></p>
+      <form class="mcq-form" data-correct="{{ mcq.correct_indices|safe }}">
+        {% for answer in mcq.answers %}
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="mcq-{{ mcq.id }}" value="{{ forloop.counter0 }}" id="mcq-{{ mcq.id }}-{{ forloop.counter0 }}">
+          <label class="form-check-label" for="mcq-{{ mcq.id }}-{{ forloop.counter0 }}">
+            {{ answer }}
+          </label>
+        </div>
+        {% endfor %}
+        <button type="button" class="btn btn-sm btn-outline-primary mt-2 show-answer-btn">Show Answer</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+
+<!-- Multipart -->
+<h4>📚 Multipart Questions</h4>
+{% for mp in multipart_questions %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <p><strong>Instructions:</strong> {{ mp.instructions|linebreaks }}</p>
+      
+      {% for part in mp.parts.all %}
+        <div class="border p-3 mb-3">
+          <p><strong>Part {{ forloop.counter }}:</strong> {{ part.question_text }}</p>
+
+          <ul class="list-group" data-question-id="{{ part.id }}">
+            {% for answer in part.answers %}
+              <li class="list-group-item">
+                <label class="form-check-label d-flex align-items-center w-100">
+                  <input type="checkbox"
+                         name="multipart_{{ part.id }}"
+                         value="{{ forloop.counter0 }}"
+                         class="form-check-input me-2 multipart-option"
+                         data-correct="{{ forloop.counter0|contains:part.correct_indices }}">
+                  {{ answer }}
+                </label>
+              </li>
+            {% endfor %}
+          </ul>
+
+          <button type="button" class="btn btn-outline-info btn-sm mt-2 show-multipart-answer-btn">
+            Show Answer
+          </button>
+        </div>
+      {% endfor %}
+
+    </div>
+  </div>
+{% endfor %}
+
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Existing MCQ buttons stay as-is...
+    
+      // Multipart "Show Answer" buttons
+      document.querySelectorAll('.show-multipart-answer-btn').forEach(button => {
+        button.addEventListener('click', () => {
+          const questionDiv = button.closest('.border');
+          const options = questionDiv.querySelectorAll('.multipart-option');
+    
+          options.forEach(option => {
+            const isCorrect = option.dataset.correct === "True";
+            const isSelected = option.checked;
+            const listItem = option.closest('li');
+    
+            // Clear old classes first
+            listItem.classList.remove('list-group-item-success', 'list-group-item-danger', 'list-group-item-primary');
+    
+            if (isSelected && isCorrect) {
+              listItem.classList.add('list-group-item-success'); // ✅ correct
+            } else if (isSelected && !isCorrect) {
+              listItem.classList.add('list-group-item-danger'); // ❌ wrong
+            } else if (!isSelected && isCorrect) {
+              listItem.classList.add('list-group-item-primary'); // 🔷 missed
+            }
+          });
+    
+          button.disabled = true;
+        });
+      });
+    });
+</script>
+    
+<script>
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.show-answer-btn').forEach(button => {
+        button.addEventListener('click', () => {
+          const form = button.closest('.mcq-form');
+          const correctIndices = JSON.parse(form.dataset.correct);
+          const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+    
+          checkboxes.forEach((checkbox, index) => {
+            const label = form.querySelector(`label[for="${checkbox.id}"]`);
+            const isChecked = checkbox.checked;
+            const isCorrect = correctIndices.includes(index);
+    
+            // Reset styles
+            label.style.backgroundColor = '';
+            label.style.color = '';
+            checkbox.disabled = true;
+    
+            if (isChecked && isCorrect) {
+              label.style.backgroundColor = '#d4edda'; // green
+            } else if (isChecked && !isCorrect) {
+              label.style.backgroundColor = '#f8d7da'; // red
+            } else if (!isChecked && isCorrect) {
+              label.style.backgroundColor = '#d1ecf1'; // blue
+            }
+          });
+    
+          // Disable button after use
+          button.disabled = true;
+          button.innerText = "Answer Shown";
+        });
+      });
+    });
+    </script>
+    
+{% endblock %}

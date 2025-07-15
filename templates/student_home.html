@@ -1,126 +1,144 @@
 {% extends 'base.html' %}
+
 {% block extra_head %}
+<style>
+    body {
+        background-color: #f5f7fa;
+        padding-bottom: 80px;
+    }
 
-    <style>
-        body {
-            background-color: #f5f7fa;
-            padding-bottom: 80px;
-        }
-        .chat-bubble {
-            max-width: 80%;
-            margin: 4px 0;
-            padding: 8px 12px;
-            border-radius: 12px;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            white-space: pre-wrap;
-            display: inline-block;
-        }
+    .quick-action-card {
+        border-radius: .5rem;
+        transition: transform 0.2s ease-in-out;
+    }
 
+    .quick-action-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+    }
 
-        .chat-bubble.user {
-            align-self: flex-end;
-            background-color: #d1ecf1;
-            color: #0c5460;
-        }
-
-        .chat-bubble.ai {
-            align-self: flex-start;
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            color: #343a40;
-        }
-
-        #chat-box {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 350px;
-            max-height: 500px;
-            z-index: 1050;
-            display: flex;
-            flex-direction: column;
-            transition: all 0.3s ease;
-        }
-
-        #chat-messages {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-            padding: 10px;
-            background: #fff;
-            border: 1px solid #ccc;
-            border-radius: .375rem .375rem 0 0;
-            font-size: 0.9rem;
-            gap: 6px; 
-        }
+    .quick-action-icon {
+        font-size: 2rem;
+    }
 
 
-      
+    .chat-bubble {
+        max-width: 80%;
+        margin: 4px 0;
+        padding: 8px 12px;
+        border-radius: 12px;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        white-space: pre-wrap;
+        display: inline-block;
+    }
 
-        #expand-button {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #007bff;
-            color: #fff;
-            border: none;
-            border-radius: .375rem;
-            padding: 6px 12px;
-            font-size: 0.9rem;
-            display: none;
-            z-index: 1060;
-        }
+    .chat-bubble.user {
+        align-self: flex-end;
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .chat-bubble.ai {
+        align-self: flex-start;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        color: #343a40;
+    }
+
+    #chat-box {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 350px;
+        max-height: 500px;
+        z-index: 9999; /* Increased to ensure it's on top */
+        display: flex;
+        flex-direction: column;
+        background-color: #ffffff; /* Solid background */
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Optional for depth */
+        overflow: hidden;
+    }
+
+    #chat-messages {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        padding: 0px;
+        background-color: #ffffff; /* Solid background */
+        border: 1px solid #ccc;
+        border-radius: .375rem .375rem 0 0;
+        font-size: 0.9rem;
+        gap: 6px;
+    }
 
 
-        #clear-button {
-            margin-top: 8px;
-        }
-        #show-chat-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1060;
-            display: none; /* Initially hidden if chat is shown */
-        }
+    #show-chat-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1060;
+        display: none;
+    }
 
-
-    </style>
+</style>
 {% endblock %}
 
 {% block content %}
-    <div class="mt-5">
-        <h1 class="text-primary">📚 Welcome, {{ user.username }}!</h1>
-        <p class="lead">This is your student home page. Ready to learn?</p>
-
-        <ul class="list-unstyled">
-            <li><a href="#" class="text-decoration-none">📝 Create New Study Content (Coming Soon)</a></li>
-            <li></li><a href="{% url 'collection_list' %}" class="btn btn-primary mt-3">📚 My Collections</a></li>
-            <li>
-                <a href="{% url 'document_list' %}" class="btn btn-primary mt-3">📚 Library</a>
-            </li>
-            <li>
-                <a href="{% url 'upload_document' %}" class="btn btn-primary mt-3">📚 Upload Document</a>
-            </li>
-            <li><a href="{% url 'browse_public_collections' %}" class="btn btn-success mt-3">🌍 Browse Public Collections</a></li>
-            
-            
-            
-            <li><a href="{% url 'logout' %}" class="text-decoration-none text-danger">🚪 Logout</a></li>
-        </ul>
+<div class="container mt-5">
+    <div class="text-center mb-5">
+        <h1 class="display-5 fw-bold text-primary">📚 Welcome, {{ user.username }}!</h1>
+        <p class="lead text-muted">Your student dashboard is ready — start creating, studying, and collaborating.</p>
     </div>
 
-    <!-- Chatbox -->
+    <div class="row g-4">
+        <div class="col-md-6 col-lg-4">
+            <div class="card quick-action-card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="quick-action-icon mb-2">📚</div>
+                    <h5 class="card-title">My Collections</h5>
+                    <p class="card-text text-muted">Access all your private and shared collections.</p>
+                    <a href="{% url 'collection_list' %}" class="btn btn-outline-primary">Go</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card quick-action-card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="quick-action-icon mb-2">🌍</div>
+                    <h5 class="card-title">Public Collections</h5>
+                    <p class="card-text text-muted">Explore collections shared by others in the community.</p>
+                    <a href="{% url 'browse_public_collections' %}" class="btn btn-outline-success">Explore</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card quick-action-card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="quick-action-icon mb-2">📂</div>
+                    <h5 class="card-title">Public Library</h5>
+                    <p class="card-text text-muted">Upload or browse shared documents by the community.</p>
+                    <a href="{% url 'public_library' %}" class="btn btn-outline-info">Visit</a>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+<!-- Chatbox (unchanged logic) -->
 <div id="chat-box" class="shadow">
     <div id="chat-header" class="d-flex justify-content-between align-items-center p-2 border-bottom">
         <h5 class="mb-0">AI Assistant</h5>
         <button id="hide-chat-btn" class="btn btn-outline-secondary btn-sm">Hide</button>
     </div>
-
-    <div id="chat-messages" class="p-2" style="max-height: 400px; overflow-y: auto;"></div>
-
-    <!-- AI Thinking Indicator -->
+    <div id="upper-note" class="p-2" style="text-align: center;display: block;"><strong>Chat With The Ai Assistant</strong></div>
+    <div id="chat-messages" class="p-0" style="min-height: 0px; max-height: 400px; overflow-y: auto;"></div>
+    <div id="lower-note" class="p-2" style="text-align: center;display: none;"><strong>Chat With The Ai Assistant</strong></div>
     <div id="ai-loading" class="text-muted px-3 pb-2" style="display: none;">
         <div class="spinner-border spinner-border-sm me-2" role="status"></div>
         AI is thinking...
@@ -132,23 +150,16 @@
         </div>
         <div class="d-flex justify-content-between align-items-center px-2 pb-2">
             <button type="submit" id="chat-submit" class="btn btn-primary">Send</button>
-            <button type="button" id="clear-button" class="btn btn-outline-secondary btn-sm" onclick="clearChat()">🧹 Clear</button>
+            <button type="button" id="clear-button" class="btn btn-outline-secondary btn-sm">🧹 Clear</button>
         </div>
     </form>
 </div>
 
-    
-    
-
-    <button id="show-chat-btn" class="btn btn-outline-secondary btn-sm">
-        Show Chat
-    </button>
-    
+<button id="show-chat-btn" class="btn btn-outline-secondary btn-sm">
+    Show Chat
+</button>
 
 
-    <!-- Bootstrap & Script -->
 {% load static %}
-
-    <script src="{% static 'js/chat.js' %}"></script>  <!-- This should be LAST inside <body> -->
-
+<script src="{% static 'js/chat.js' %}"></script>
 {% endblock %}

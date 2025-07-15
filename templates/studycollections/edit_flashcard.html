@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h2>Edit Flashcard of "{{ collection.title }}" collection</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-success">Save Changes</button>
+    <a href="{% url 'collection_detail' collection.id %}" class="btn btn-secondary">Cancel</a>
+  </form>
+  <form action="{% url 'delete_flashcard' collection.id flashcard.id %}" method="post" onsubmit="return confirm('Are you sure you want to delete this flashcard?');">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Delete Flashcard</button>
+  </form>
+
+</div>
+{% endblock %}

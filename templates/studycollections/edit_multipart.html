@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h2>Edit Multipart Question in "{{ collection.title }}"</h2>
+  <form id="multipart-form" method="post">
+    {% csrf_token %}
+
+    <!-- Instructions -->
+    <div class="mb-4">
+      <label for="instructions" class="form-label"><strong>Instructions</strong></label>
+      <textarea id="instructions" name="instructions" class="form-control" rows="3" required>{{ multipart.instructions }}</textarea>
+    </div>
+
+    <!-- Multiple MCQ parts -->
+    <div id="mcq-parts-container"></div>
+
+    <button type="button" class="btn btn-outline-primary mb-3" onclick="addMCQPart()">➕ Add MCQ Part</button>
+
+    <input type="hidden" name="mcq_parts_json" id="mcq-parts-json">
+
+    <!-- Submit -->
+    <div>
+      <button type="submit" class="btn btn-success">Update Multipart Question</button>
+      <a href="{% url 'collection_detail' collection.id %}" class="btn btn-secondary ms-2">Cancel</a>
+    </div>
+  </form>
+
+  <!-- Delete button -->
+  <form action="{% url 'delete_multipart' collection.id multipart.id %}" method="post" class="mt-3" onsubmit="return confirm('Are you sure you want to delete this multipart question?');">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Delete Multipart Question</button>
+  </form>
+</div>
+
+<script>
+let partIndex = 0;
+
+function addMCQPart(data = null) {
+  const container = document.getElementById('mcq-parts-container');
+
+  const partDiv = document.createElement('div');
+  partDiv.classList.add('mb-4', 'border', 'p-3');
+
+  partDiv.innerHTML = `
+    <h5>MCQ Part ${partIndex + 1}</h5>
+    <div class="mb-2">
+      <label class="form-label">Question Text</label>
+      <textarea class="form-control question-text" rows="2" required></textarea>
+    </div>
+    <div class="answers-list"></div>
+    <button type="button" class="btn btn-sm btn-outline-primary mb-2" onclick="addAnswer(this)">➕ Add Answer</button>
+  `;
+
+  container.appendChild(partDiv);
+
+  if (data) {
+    partDiv.querySelector('.question-text').value = data.question_text;
+
+    data.answers.forEach((ans, idx) => {
+      const isCorrect = data.correct_indices.includes(idx);
+      addAnswer(partDiv, ans, isCorrect);
+    });
+  } else {
+    addAnswer(partDiv);
+    addAnswer(partDiv);
+  }
+
+  partIndex++;
+}
+
+function addAnswer(partDivOrButton, answerText = '', isCorrect = false) {
+  const container = partDivOrButton.closest('.border') || partDivOrButton;
+  const answersList = container.querySelector('.answers-list');
+
+  const div = document.createElement('div');
+  div.classList.add('input-group', 'mb-2');
+  div.innerHTML = `
+    <span class="input-group-text">
+      <input type="checkbox" class="form-check-input correct-checkbox" ${isCorrect ? 'checked' : ''}>
+    </span>
+    <input type="text" class="form-control answer-input" placeholder="Answer text" required value="${answerText}">
+    <button type="button" class="btn btn-outline-danger" onclick="this.closest('.input-group').remove()">✕</button>
+  `;
+
+  answersList.appendChild(div);
+}
+
+// Populate existing data
+document.addEventListener('DOMContentLoaded', () => {
+  const partsData = JSON.parse('{{ parts_json|escapejs }}');
+  partsData.forEach(part => addMCQPart(part));
+});
+
+document.getElementById('multipart-form').addEventListener('submit', function(e) {
+  const allParts = [];
+  const containers = document.querySelectorAll('#mcq-parts-container > .border');
+
+  for (const container of containers) {
+    const question = container.querySelector('.question-text').value.trim();
+    const multiCorrect = true;
+    const answers = [];
+    const correctIndices = [];
+
+    const answerInputs = container.querySelectorAll('.answer-input');
+    const checkboxes = container.querySelectorAll('.correct-checkbox');
+
+    answerInputs.forEach((input, idx) => {
+      const text = input.value.trim();
+      if (text) {
+        answers.push(text);
+        if (checkboxes[idx].checked) {
+          correctIndices.push(idx);
+        }
+      }
+    });
+
+    if (answers.length < 2) {
+      alert("Each part must have at least 2 answers.");
+      e.preventDefault();
+      return;
+    }
+    if (correctIndices.length === 0) {
+      alert("Each part must have at least 1 correct answer.");
+      e.preventDefault();
+      return;
+    }
+
+    allParts.push({
+      question_text: question,
+      multiple_correct: multiCorrect,
+      answers: answers,
+      correct_indices: correctIndices
+    });
+  }
+
+  document.getElementById('mcq-parts-json').value = JSON.stringify(allParts);
+});
+</script>
+{% endblock %}

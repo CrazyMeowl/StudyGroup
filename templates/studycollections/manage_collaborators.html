@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+
+  <h4 class="mt-5">Viewers</h4>
+<ul class="list-group">
+  {% for user in viewers %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      {{ user.username }}
+      <form method="post" class="ms-3">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="remove_viewer">
+        <input type="hidden" name="user_id" value="{{ user.id }}">
+        <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+      </form>
+    </li>
+  {% empty %}
+    <li class="list-group-item">No viewers yet.</li>
+  {% endfor %}
+</ul>
+
+<h4 class="mt-4">Add Viewer</h4>
+<form method="post">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="add_viewer">
+  <label>Username or Email:</label>
+  <input type="text" name="identifier" class="form-control" required>
+  <button type="submit" class="btn btn-outline-primary mt-2">Add Viewer</button>
+</form>
+
+  <h2>Manage Collaborators – {{ collection.title }}</h2>
+
+  <!-- Invite Collaborator -->
+  <h4 class="mt-4">Invite Collaborator (Editor)</h4>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="invite">
+    <label>Username or Email:</label>
+    <input type="text" name="identifier" class="form-control" required>
+    <button type="submit" class="btn btn-primary mt-2">Invite</button>
+  </form>
+
+
+  <!-- Collaborators List -->
+  <h4 class="mt-5">Collaborators (Editors)</h4>
+  <ul class="list-group">
+    {% for user in collaborators %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        {{ user.username }}
+        <form method="post" class="ms-3">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="remove_collaborator">
+          <input type="hidden" name="user_id" value="{{ user.id }}">
+          <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+        </form>
+      </li>
+    {% empty %}
+      <li class="list-group-item">No collaborators yet.</li>
+    {% endfor %}
+  </ul>
+
+
+  <!-- Pending Invitations -->
+  <h4 class="mt-5">Pending Invitations</h4>
+  <ul class="list-group">
+    {% for invite in invites %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        {{ invite.invitee.username }} – Pending
+        <form method="post" class="ms-3">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="cancel_invite">
+          <input type="hidden" name="user_id" value="{{ invite.invitee.id }}">
+          <button type="submit" class="btn btn-sm btn-outline-danger">Cancel</button>
+        </form>
+      </li>
+    {% empty %}
+      <li class="list-group-item">No pending invitations.</li>
+    {% endfor %}
+  </ul>
+
+  <a href="{% url 'collection_detail' collection.id %}" class="btn btn-secondary mt-4">Back to Collection</a>
+</div>
+{% endblock %}

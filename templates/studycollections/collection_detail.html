@@ -1,4 +1,69 @@
 {% extends 'base.html' %}
+{% block extra_head %}
+<style>
+    
+    .chat-bubble {
+        max-width: 80%;
+        margin: 4px 0;
+        padding: 8px 12px;
+        border-radius: 12px;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        white-space: pre-wrap;
+        display: inline-block;
+    }
+
+    .chat-bubble.user {
+        align-self: flex-end;
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .chat-bubble.ai {
+        align-self: flex-start;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        color: #343a40;
+    }
+
+    #chat-box {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 350px;
+        max-height: 500px;
+        z-index: 9999; /* Increased to ensure it's on top */
+        display: flex;
+        flex-direction: column;
+        background-color: #ffffff; /* Solid background */
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Optional for depth */
+        overflow: hidden;
+    }
+
+    #chat-messages {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        padding: 0px;
+        background-color: #ffffff; /* Solid background */
+        border: 1px solid #ccc;
+        border-radius: .375rem .375rem 0 0;
+        font-size: 0.9rem;
+        gap: 6px;
+    }
+
+
+    #show-chat-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1060;
+        display: none;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
@@ -6,6 +71,169 @@
     <p class="text-muted">Created by {{ collection.created_by.username }} on {{ collection.created_at|date:"F d, Y" }}</p>
     <p>{{ collection.description|linebreaks }}</p>
 
-    <a href="{% url 'browse_public_collections' %}" class="btn btn-secondary mt-3">Back to Public Collections</a>
+    {% if request.user == collection.created_by %}
+        <a href="{% url 'manage_collaborators' collection.id %}" class="btn btn-outline-secondary mt-2">Manage Collaborators</a>
+        
+        <a href="{% url 'edit_collection' collection.id %}" class="btn btn-outline-secondary mt-2">Edit Collection</a>
+        
+    {% endif %}
+
+    {% if is_editor %}
+        <hr>
+        <h4>Edit Options</h4>
+        <a href="{% url 'add_flashcard' collection.id %}" class="btn btn-outline-primary mb-2">➕ Add Flashcard</a><br>
+        <a href="{% url 'add_mcq' collection.id %}" class="btn btn-outline-primary mb-2">➕ Add Multiple Choice Question</a><br>
+        <a href="{% url 'add_multipart' collection.id %}" class="btn btn-outline-primary mb-2">➕ Add Multipart Question</a><br>
+    {% endif %}
+    <a href="{% url 'study_mode' collection.id %}" class="btn btn-outline-success mt-3">📖 Study/Test Mode</a>
+
+    <hr>
+
+    {% if flashcards %}
+        <h4>📘 Flashcards</h4>
+        {% for flashcard in flashcards %}
+        <div class="card mb-3">
+            <div class="card-body">
+            <strong>Q:</strong> {{ flashcard.question|linebreaksbr }}<br>
+            <strong>A:</strong> {{ flashcard.answer|linebreaksbr }}
+
+            {% if is_editor %}
+                <div class="mt-2">
+                <a href="{% url 'edit_flashcard' collection.id flashcard.id %}" class="btn btn-sm btn-outline-secondary">✏️ Edit</a>
+                </div>
+            {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+
+    {% endif %}
+
+    {% if mcqs %}
+        <h4>📝 Multiple Choice Questions</h4>
+        {% for mcq in mcqs %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <strong>#{{ forloop.counter }} - Q:</strong> {{ mcq.question_text|linebreaks }}<br>
+                    <strong>Choices:</strong>
+                    <ul>
+                        {% for answer in mcq.answers %}
+                            <li>
+                                {{ answer }}
+                                {% if forloop.counter0 in mcq.correct_indices %}
+                                    ✅
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    {% if is_editor %}
+                        <a href="{% url 'edit_mcq' collection.id mcq.id %}" class="btn btn-sm btn-outline-secondary">✏️ Edit</a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if multipart_questions %}
+        <h4>📚 Multipart Questions</h4>
+        {% for multipart in multipart_questions %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <strong>#{{ forloop.counter }} - Instructions:</strong> {{ multipart.instructions|linebreaks }}
+                    <hr>
+                    {% for subq in multipart.parts.all %}
+                        <div class="mb-2 ps-3">
+                            <strong>Q{{ forloop.counter }}:</strong> {{ subq.question_text|linebreaks }}<br>
+                            <ul>
+                                {% for ans in subq.answers %}
+                                    <li>
+                                        {{ ans }}
+                                        {% if forloop.counter0 in subq.correct_indices %}
+                                            ✅
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                            
+                        </div>
+                    {% endfor %}
+                    {% if is_editor %}
+                        <a href="{% url 'edit_multipart' collection.id multipart.id %}" class="btn btn-sm btn-outline-secondary">✏️ Edit</a>
+                    {% endif %}
+                </div>
+                
+            </div>
+        {% endfor %}
+    {% endif %}
+    <hr>
+    <h4>📂 Documents</h4>
+
+    {% if is_editor %}
+        <a href="{% url 'upload_document' collection.id %}" class="btn btn-primary mb-4">📤 Upload Document</a>
+    {% endif %}
+
+
+    {% if documents %}
+    <ul class="list-group">
+        {% for doc in documents %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+                <strong>{{ doc.title }}</strong><br>
+                <small class="text-muted">Uploaded by {{ doc.uploaded_by.username }} on {{ doc.uploaded_at|date:"F d, Y" }}</small>
+            </div>
+            <div class="btn-group">
+                <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-success" target="_blank">🔗 View</a>
+
+                <a href="{% url 'report_document' collection.id doc.id %}" class="btn btn-sm btn-outline-warning">🚩 Report</a>
+
+                {% if is_editor %}
+                <form method="post" action="{% url 'delete_document' collection.id doc.id %}" onsubmit="return confirm('Delete this document?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger">🗑️ Delete</button>
+                </form>
+                {% endif %}
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-muted">No documents uploaded yet.</p>
+    {% endif %}
+
+    <a href="{% url 'browse_public_collections' %}" class="btn btn-secondary mt-3">← Back to Public Collections</a>
 </div>
+
+<!-- Chatbox -->
+<div id="chat-box" class="shadow">
+    <div id="chat-header" class="d-flex justify-content-between align-items-center p-2 border-bottom">
+        <h5 class="mb-0">AI Assistant</h5>
+        <button id="hide-chat-btn" class="btn btn-outline-secondary btn-sm">Hide</button>
+    </div>
+    <div id="upper-note" class="p-2" style="text-align: center;display: none;"><strong>Chat With The Ai Assistant</strong></div>
+    <div id="chat-messages" class="p-0" style="min-height: 0px; max-height: 400px; overflow-y: auto;"></div>
+    <div id="lower-note" class="p-2" style="text-align: center;display: none;"><strong>Chat With The Ai Assistant</strong></div>
+    <div id="ai-loading" class="text-muted px-3 pb-2" style="display: none;">
+        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+        AI is thinking...
+    </div>
+    <form id="chat-form">
+        <div class="mb-2 px-2">
+            <textarea id="chat-input" class="form-control" placeholder="Ask something... (Shift+Enter for newline)"></textarea>
+        </div>
+        <div class="d-flex justify-content-between align-items-center px-2 pb-2">
+            <button type="submit" id="chat-submit" class="btn btn-primary">Send</button>
+            <button type="button" id="clear-button" class="btn btn-outline-secondary btn-sm">🧹 Clear</button>
+        </div>
+    </form>
+</div>
+{% if collection %}
+<script>
+    window.collectionId = {{ collection.id }};
+</script>
+{% endif %}
+<button id="show-chat-btn" class="btn btn-outline-secondary btn-sm">
+    Show Chat
+</button>
+{% load static %}
+<script src="{% static 'js/chat.js' %}"></script>
+
 {% endblock %}

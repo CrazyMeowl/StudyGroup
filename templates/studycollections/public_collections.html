@@ -3,27 +3,35 @@
 <div class="container mt-5">
     <h1 class="mb-4">🌍 Browse Public Collections</h1>
 
+    <form method="get" class="row mb-4">
+        <div class="col-md-5 mb-2">
+            <input type="text" name="q" class="form-control" placeholder="Search by title or description" value="{{ query }}">
+        </div>
+        <div class="col-md-4 mb-2">
+            <input type="text" name="creator" class="form-control" placeholder="Filter by creator username" value="{{ creator }}">
+        </div>
+        <div class="col-md-3 mb-2">
+            <button type="submit" class="btn btn-primary w-100">🔍 Search</button>
+        </div>
+    </form>
+
     {% if collections %}
         <div class="list-group">
             {% for collection in collections %}
             <div class="card mb-3">
                 <div class="card-body">
                     <h5 class="card-title">
-                        <a href="{% url 'collection_detail' collection.id %}">
-                            {{ collection.title }}
-                        </a>
+                        <a href="{% url 'collection_detail' collection.id %}">{{ collection.title }}</a>
                     </h5>
                     <p class="card-text">{{ collection.description|truncatewords:20 }}</p>
                     <p class="card-text"><small class="text-muted">By {{ collection.created_by.username }}</small></p>
                 </div>
             </div>
-        {% empty %}
-            <p>No public collections found.</p>
-        {% endfor %}
-
+            {% endfor %}
         </div>
     {% else %}
-        <p>No public collections available yet.</p>
+        <p>No public collections found.</p>
     {% endif %}
 </div>
+
 {% endblock %}

@@ -1,15 +1,93 @@
-<!-- studycollections/templates/studycollections/collection_list.html -->
 {% extends 'base.html' %}
 
 {% block content %}
-  <h2>Your Collections</h2>
-  <ul>
-    {% for collection in collections %}
-      <li>{{ collection.title }} - {{ collection.privacy }}</li>
-      <a href="{% url 'view_collection' collection.id %}" class="btn btn-outline-secondary btn-sm">View</a>
+<div class="container mt-4">
 
+  <div class="d-flex justify-content-end mt-3 mb-4 sticky-top bg-white" style="z-index: 1030;">
+    <a href="{% url 'create_collection' %}" class="btn btn-primary shadow">Create New Collection</a>
+  </div>
+
+  <!-- Your Collections -->
+   
+  <h2 class="mb-4">Your Collections</h2>
+  <div class="row">
+    {% for collection in owned_collections %}
+      <div class="col-md-4 mb-4">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">
+              {{ collection.title }}
+              {% if collection.privacy %}
+                <span class="badge bg-success">Public</span>
+              {% else %}
+                <span class="badge bg-secondary">Private</span>
+              {% endif %}
+            </h5>
+            <p class="card-text">{{ collection.description|default:"No description." }}</p>
+            <p class="text-muted">Created by <strong>you</strong></p>
+            <a href="{% url 'collection_detail' collection.id %}" class="btn btn-outline-secondary btn-sm">View</a>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <p class="text-muted">You have no collections.</p>
     {% endfor %}
-  </ul>
+  </div>
 
-  <a href="{% url 'create_collection' %}" class="btn btn-primary">Create New Collection</a>
+  <!-- Shared with You (Editor Access) -->
+  <h2 class="mt-5 mb-4">Shared with You (Editor Access)</h2>
+  <div class="row">
+    {% for collection in shared_collections %}
+      <div class="col-md-4 mb-4">
+        <div class="card h-100 border-info">
+          <div class="card-body">
+            <h5 class="card-title">
+              {{ collection.title }}
+              {% if collection.privacy == "public" %}
+                <span class="badge bg-success">Public</span>
+              {% else %}
+                <span class="badge bg-secondary">Private</span>
+              {% endif %}
+
+            </h5>
+            <p class="card-text">{{ collection.description|default:"No description." }}</p>
+            <p class="text-muted">Created by <strong>{{ collection.created_by.username }}</strong></p>
+            <a href="{% url 'collection_detail' collection.id %}" class="btn btn-outline-primary btn-sm">View</a>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <p class="text-muted">No collections shared with you as editor.</p>
+    {% endfor %}
+  </div>
+
+  <!-- Shared with You (View Only) -->
+  <h2 class="mt-5 mb-4">Shared with You (View Only)</h2>
+  <div class="row">
+    {% for collection in viewer_collections %}
+      <div class="col-md-4 mb-4">
+        <div class="card h-100 border-warning">
+          <div class="card-body">
+            <h5 class="card-title">
+              {{ collection.title }}
+              {% if collection.is_public %}
+                <span class="badge bg-success">Public</span>
+              {% else %}
+                <span class="badge bg-secondary">Private</span>
+              {% endif %}
+            </h5>
+            <p class="card-text">{{ collection.description|default:"No description." }}</p>
+            <p class="text-muted">Created by <strong>{{ collection.created_by.username }}</strong></p>
+            <a href="{% url 'collection_detail' collection.id %}" class="btn btn-outline-warning btn-sm">View</a>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <p class="text-muted">No view-only collections shared with you.</p>
+    {% endfor %}
+  </div>
+
+
+
+</div>
 {% endblock %}

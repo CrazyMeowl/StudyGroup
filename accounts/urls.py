@@ -8,4 +8,7 @@ urlpatterns = [
     path('logout/', views.custom_logout, name='logout'),
     path('chat/', views.chat, name='chat'),  # Ensure this is here
     path('clear_chat/', views.clear_chat, name='clear_chat'),
+    path('activate/<uidb64>/<token>/', views.activate, name='activate'),
+    path('forgot-password/', views.forgot_password, name='forgot_password'),
+    path('reset-password/<uidb64>/<token>/', views.reset_password, name='reset_password'),
 ]

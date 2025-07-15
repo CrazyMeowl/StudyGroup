@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h2>Add Multiple Choice Question to "{{ collection.title }}"</h2>
+  <form id="mcq-form" method="post" novalidate>
+    {% csrf_token %}
+
+    <!-- Question Text -->
+    <div class="mb-3">
+      <label for="id_question_text" class="form-label">Question</label>
+      <textarea id="id_question_text" name="question_text" class="form-control" rows="2" required>{{ form.question_text.value }}</textarea>
+    </div>
+
+    <!-- Dynamic Answers List -->
+    <label class="form-label">Answers</label>
+    <div id="answers-container">
+      <!-- A single template row (hidden) for cloning) -->
+      <div class="input-group mb-2 answer-row d-none" id="answer-template">
+        <span class="input-group-text">
+          <input class="form-check-input mt-0 correct-checkbox" type="checkbox">
+        </span>
+        <input type="text" class="form-control answer-input" placeholder="Answer text">
+        <button type="button" class="btn btn-outline-danger remove-answer-btn">✕</button>
+      </div>
+
+      <!-- You can start with two visible rows by cloning in JS on page load -->
+    </div>
+    <button type="button" id="add-answer-btn" class="btn btn-outline-primary btn-sm mb-3">➕ Add Answer</button>
+
+    <!-- Hidden fields to carry JSON data -->
+    <input type="hidden" name="answers" id="answers-field">
+    <input type="hidden" name="correct_indices" id="correct-indices-field">
+
+    <!-- Submit -->
+    <div>
+      <button type="submit" class="btn btn-success">Save Question</button>
+      <a href="{% url 'collection_detail' collection.id %}" class="btn btn-secondary ms-2">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<script>
+// Wait for the DOM
+document.addEventListener('DOMContentLoaded', () => {
+  const container = document.getElementById('answers-container');
+  const template = document.getElementById('answer-template');
+  const addBtn = document.getElementById('add-answer-btn');
+
+  // Function to add a new answer row
+  function addAnswerRow(text = '', correct = false) {
+    const row = template.cloneNode(true);
+    row.id = '';
+    row.classList.remove('d-none');
+
+    const input = row.querySelector('.answer-input');
+    input.value = text;
+
+    const checkbox = row.querySelector('.correct-checkbox');
+    checkbox.checked = correct;
+
+    row.querySelector('.remove-answer-btn').addEventListener('click', () => {
+      row.remove();
+    });
+
+    container.appendChild(row);
+  }
+
+  // Initialize with two empty answer rows
+  addAnswerRow();
+  addAnswerRow();
+
+  // Add more on button click
+  addBtn.addEventListener('click', () => addAnswerRow());
+
+  // On form submit, gather answers and correct indices
+  document.getElementById('mcq-form').addEventListener('submit', (e) => {
+    const answerInputs = container.querySelectorAll('.answer-input');
+    const checkboxes   = container.querySelectorAll('.correct-checkbox');
+    const answers = [], correctIndices = [];
+    let validIndex = 0;
+
+    answerInputs.forEach((input, idx) => {
+      const val = input.value.trim();
+      if (!val) return;  // skip empty
+      answers.push(val);
+      if (checkboxes[idx].checked) {
+        correctIndices.push(validIndex);
+      }
+      validIndex++;
+    });
+
+
+    // Require at least one answer
+    if (answers.length < 2) {
+      e.preventDefault();
+      alert('Please add at least two answers.');
+      return;
+    }
+    // Require at least one correct
+    if (correctIndices.length === 0) {
+      e.preventDefault();
+      alert('Please mark at least one correct answer.');
+      return;
+    }
+
+    // Populate hidden fields
+    document.getElementById('answers-field').value = JSON.stringify(answers);
+    document.getElementById('correct-indices-field').value = JSON.stringify(correctIndices);
+  });
+});
+</script>
+{% endblock %}
