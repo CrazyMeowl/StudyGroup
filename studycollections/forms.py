@@ -1,5 +1,3 @@
-# studycollections/forms.py
-
 from django import forms
 from .models import Collection, Flashcard, MultipleChoiceQuestion, Document, PublicDocument
 from django.forms import modelformset_factory

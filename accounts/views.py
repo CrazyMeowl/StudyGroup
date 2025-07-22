@@ -29,7 +29,7 @@ import threading
 from langdetect import detect
 
 OLLAMA_URL = "http://localhost:11434/api/chat"
-# MODEL_NAME = "finetuned"
+# MODEL_NAME = "deepseek-r1"
 MODEL_NAME = "llama3-zero"
 @csrf_exempt
 @login_required
@@ -251,7 +251,132 @@ def get_fallback_message(lang_code):
         "ja": "StudyGroup は現在、ご質問にお答えするために必要な情報を持っていません。",
         "ko": "StudyGroup는 현재 귀하의 질문에 답변하는 데 필요한 정보를 보유하고 있지 않습니다。"
     }
-    return messages.get(lang_code, messages["en"])
+#     return messages.get(lang_code, messages["en"])
+# ### deepseek-r1
+# @csrf_exempt
+# @login_required
+# def chat(request):
+#     import re
+#     if request.method == "POST":
+#         data = json.loads(request.body)
+#         user_message = data.get("message")
+#         if not user_message:
+#             return JsonResponse({"reply": "Please enter a message."}, status=400)
+
+#         fallback_reply = "StudyGroup currently does not have the required information to answer your question."
+
+#         # Load chat history
+#         history = request.session.get("chat_history", [])
+#         history.append({"role": "user", "content": user_message})
+
+#         # Step 1: Retrieve candidate chunks
+#         chunks, _ = get_relevant_public_context(query=user_message, top_k=10, min_score=0.0)
+#         chunk_list = [chunk.strip() for chunk in chunks.split("\n\n") if chunk.strip()]
+#         short_chunks = [chunk for chunk in chunk_list]
+
+#         if not short_chunks:
+#             print("[DEBUG] No usable chunks — skipping to fallback.")
+#             assistant_reply = fallback_reply
+#             history.append({"role": "assistant", "content": assistant_reply})
+#             request.session["chat_history"] = history[-20:]
+#             request.session.modified = True
+#             return JsonResponse({"reply": assistant_reply})
+#         for chunk in short_chunks:
+#             print(f"[DEBUG] chunk: {chunk}")
+#         # Step 2: Ask DeepSeek to filter relevant passages (text-based)
+#         relevance_prompt = [
+#             {
+#                 "role": "system",
+#                 "content": (
+#                     "You are an assistant that selects useful passages to help answer a user's question.\n"
+#                     "Given a question and a set of passages, return only the passages that clearly help answer the question.\n"
+#                     "If none are helpful, reply with: NONE.\n"
+#                     "Do not explain or add commentary. Do not include <think> tags."
+#                 )
+#             },
+#             {
+#                 "role": "user",
+#                 "content": f"Question: {user_message}\n\nPassages:\n" + "\n\n".join(short_chunks)
+#             }
+#         ]
+
+#         try:
+#             relevance_response = requests.post(
+#                 OLLAMA_URL,
+#                 json={
+#                     "model": MODEL_NAME,
+#                     "messages": relevance_prompt,
+#                     "stream": False,
+#                     "temperature": 0.0
+#                 }
+#             )
+#             raw_relevance = relevance_response.json()["message"]["content"]
+#             relevance_answer = re.sub(r"<think>.*?</think>", "", raw_relevance, flags=re.DOTALL).strip()
+#             print(f"[DEBUG] raw_relevance: {raw_relevance}")
+
+#             if "none" in relevance_answer.lower():
+#                 print("[DEBUG] No relevant context — using fallback.")
+#                 assistant_reply = fallback_reply
+#                 history.append({"role": "assistant", "content": assistant_reply})
+#                 request.session["chat_history"] = history[-20:]
+#                 request.session.modified = True
+#                 return JsonResponse({"reply": assistant_reply})
+#             else:
+#                 system_prompt = (
+#                     "You are StudyGroup, an academic assistant. Answer the user's question using ONLY the provided information below. "
+#                     f"If the information does not contain the answer, respond: '{fallback_reply}'.\n\n"
+#                     "Do not use external knowledge. Do not guess. Do not include <think> tags.\n\n"
+#                     f"Information:\n{relevance_answer}"
+#                 )
+
+#         except Exception as e:
+#             print(f"[DEBUG] Relevance check failed: {e}")
+#             assistant_reply = fallback_reply
+#             history.append({"role": "assistant", "content": assistant_reply})
+#             request.session["chat_history"] = history[-20:]
+#             request.session.modified = True
+#             return JsonResponse({"reply": assistant_reply})
+
+#         # Step 3: Ask final question using filtered context
+#         messages_payload = [{"role": "system", "content": system_prompt}]
+#         messages_payload.extend(history)
+
+#         try:
+#             start_time = time.time()
+#             response = requests.post(
+#                 OLLAMA_URL,
+#                 json={
+#                     "model": MODEL_NAME,
+#                     "messages": messages_payload,
+#                     "stream": False,
+#                     "temperature": 0.0
+#                 }
+#             )
+#             raw_reply = response.json()["message"]["content"]
+#             assistant_reply = re.sub(r"<think>.*?</think>", "", raw_reply, flags=re.DOTALL).strip()
+
+#         except Exception as e:
+#             assistant_reply = "Cannot connect to the chat server."
+#             print(f"[chat] Ollama error: {e}")
+#         finally:
+#             elapsed = time.time() - start_time
+#             token_count = sum(len(m["content"].split()) for m in messages_payload)
+#             print(f"[DEBUG] Tokens: {token_count}, Time: {elapsed:.2f}s, TPS: {token_count / elapsed:.2f}")
+
+#         # Step 4: Save updated history
+#         history.append({"role": "assistant", "content": assistant_reply})
+#         request.session["chat_history"] = history[-20:]
+#         request.session.modified = True
+
+#         return JsonResponse({"reply": assistant_reply})
+
+#     elif request.method == "GET":
+#         return JsonResponse({
+#             "history": request.session.get("chat_history", [])
+#         })
+
+
+## llama3
 @csrf_exempt
 @login_required
 def chat(request):
@@ -261,11 +386,43 @@ def chat(request):
         if not user_message:
             return JsonResponse({"reply": "Please enter message."}, status=400)
 
+
+        
         fallback_reply = "StudyGroup currently does not have the required information to answer your question."
 
         # Load chat history
         history = request.session.get("chat_history", [])
         history.append({"role": "user", "content": user_message})
+
+
+                # Step 0: Handle simple greetings or assistant-related questions
+        greetings = {"hi", "hello", "hey", "greetings"}
+        assistant_questions = [
+            "who are you",
+            "what is studygroup",
+            "tell me about studygroup",
+            "what can you do",
+            "what is this",
+        ]
+
+        lower_msg = user_message.strip().lower()
+
+        cleaned_lower_msg = lower_msg.replace("!", "").replace(".", "").replace("?", "").strip()
+        if cleaned_lower_msg in greetings:
+            reply = "Hello! How can I help you today?"
+            history.append({"role": "assistant", "content": reply})
+            request.session["chat_history"] = history
+            return JsonResponse({"reply": reply})
+
+        # Assistant info response
+        if any(q in lower_msg for q in assistant_questions):
+            reply = (
+                "I'm StudyGroup's AI assistant. I can help you understand study materials, "
+                "answer questions based on public documents and shared collections, and assist with your learning."
+            )
+            history.append({"role": "assistant", "content": reply})
+            request.session["chat_history"] = history
+            return JsonResponse({"reply": reply})
 
         # Step 1: Retrieve raw context (multiple chunks)
         chunks, _ = get_relevant_public_context(query=user_message, top_k=5, min_score=0.0)

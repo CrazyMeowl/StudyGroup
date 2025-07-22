@@ -1,4 +1,3 @@
-# documents/validators.py (optional file for clarity)
 import os
 from django.core.exceptions import ValidationError
 

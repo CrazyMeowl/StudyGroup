@@ -1,8 +1,12 @@
-# studycollections/views.py
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
+from django.contrib.sites.shortcuts import get_current_site
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.urls import reverse
+from django.conf import settings
+from django.utils.html import strip_tags
 from django.db.models import Q
 from django.contrib import messages
 from ..forms import (
@@ -242,17 +246,98 @@ def manage_collaborators(request, collection_id):
         'invites': CollaborationInvite.objects.filter(collection=collection, accepted=False),
     })
 
+# def send_invitation_email(request, invite):
+#     subject = f"You've been invited to collaborate on '{invite.collection.title}'"
+#     url = request.build_absolute_uri(reverse('accept_invite', args=[invite.id]))
+#     message = f"Hello {invite.invitee.username},\n\nYou have been invited to collaborate on the collection '{invite.collection.title}'.\nClick here to accept: {url}"
+
+#     try:
+#         send_mail(subject, message, settings.EMAIL_HOST_USER, [invite.invitee.email])
+#     except BadHeaderError:
+#         print("Invalid header found when sending mail.")
+#     except Exception as e:
+#         print(f"Error sending mail: {e}")
+
+class EmailThread(threading.Thread):
+    """
+    A thread to send emails in the background, preventing UI lag.
+    Supports sending both plain text and HTML emails.
+    """
+    def __init__(self, subject, message, from_email, recipient_list, html_message=None, fail_silently=False):
+        """
+        Initializes the EmailThread.
+
+        Args:
+            subject (str): The subject line of the email.
+            message (str): The plain text body of the email (used as fallback for HTML).
+            from_email (str): The sender's email address.
+            recipient_list (list): A list of recipient email addresses.
+            html_message (str, optional): The HTML body of the email. Defaults to None.
+            fail_silently (bool, optional): If True, exceptions during sending are suppressed. Defaults to False.
+        """
+        self.subject = subject
+        self.message = message
+        self.from_email = from_email
+        self.recipient_list = recipient_list
+        self.html_message = html_message
+        self.fail_silently = fail_silently
+        super().__init__() # Correct way to call parent constructor in Python 3
+
+    def run(self):
+        """
+        Executes the email sending logic in the new thread.
+        Uses EmailMultiAlternatives if html_message is provided, otherwise falls back to send_mail.
+        """
+        try:
+            if self.html_message:
+
+                msg = EmailMultiAlternatives(
+                    self.subject,
+                    self.message, # Plain text version
+                    self.from_email,
+                    self.recipient_list
+                )
+                msg.attach_alternative(self.html_message, "text/html")
+                msg.send(fail_silently=self.fail_silently)
+            else:
+                send_mail(
+                    subject=self.subject,
+                    message=self.message,
+                    from_email=self.from_email,
+                    recipient_list=self.recipient_list,
+                    fail_silently=self.fail_silently,
+                )
+            print(f"Email sent successfully to: {self.recipient_list}") 
+        except Exception as e:
+            print(f"Error sending email to {self.recipient_list}: {e}")
+            if not self.fail_silently:
+                raise
+
 def send_invitation_email(request, invite):
     subject = f"You've been invited to collaborate on '{invite.collection.title}'"
-    url = request.build_absolute_uri(reverse('accept_invite', args=[invite.id]))
-    message = f"Hello {invite.invitee.username},\n\nYou have been invited to collaborate on the collection '{invite.collection.title}'.\nClick here to accept: {url}"
+    accept_url = request.build_absolute_uri(reverse('accept_invite', args=[invite.id]))
 
-    try:
-        send_mail(subject, message, settings.EMAIL_HOST_USER, [invite.invitee.email])
-    except BadHeaderError:
-        print("Invalid header found when sending mail.")
-    except Exception as e:
-        print(f"Error sending mail: {e}")
+    context = {
+        'invite': invite,
+        'accept_url': accept_url,
+        'site_name': get_current_site(request).name,
+        'from_email': settings.EMAIL_HOST_USER,
+    }
+
+    html_message = render_to_string('email/invitation_email.html', context)
+    plain_message = strip_tags(html_message)
+
+    from_email = settings.EMAIL_HOST_USER
+    to_email = [invite.invitee.email]
+
+    # Send the email in a separate thread
+    EmailThread(
+        subject=subject,
+        message=plain_message,
+        from_email=from_email,
+        recipient_list=to_email,
+        html_message=html_message
+    ).start()
 
 @login_required
 def accept_invite(request, invite_id):

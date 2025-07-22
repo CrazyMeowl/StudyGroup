@@ -1,4 +1,3 @@
-# studycollections/views/chat_views.py
 import json
 import requests
 from langdetect import detect

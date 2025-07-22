@@ -14,7 +14,7 @@ from django.contrib import messages
 chroma = PersistentClient(path="./chroma_db")
 
 
-def chunk_text(text, chunk_size=200, overlap=30):
+def chunk_text(text, chunk_size=150, overlap=30):
     """
     Splits text into overlapping chunks.
     """
